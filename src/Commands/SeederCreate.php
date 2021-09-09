@@ -32,7 +32,7 @@ class SeederCreate extends Command
 
     protected function getNewSeederDirectory(): string
     {
-        $directory =  realpath(__DIR__  . '/../../../database/seeders/');
+        $directory =  app_path(  '/database/seeders/');
         $directory = $directory . DIRECTORY_SEPARATOR . $this->seeder_folder;
 
         if(!is_dir($directory)) {

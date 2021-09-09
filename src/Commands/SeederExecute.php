@@ -12,6 +12,7 @@ class SeederExecute extends Command
 
     protected $description = 'Execute flix seeder';
 
+
     public function handle()
     {
 
@@ -42,6 +43,7 @@ class SeederExecute extends Command
         });
     }
 
+
     private function getSeederClasses(): array
     {
         $class_name = $this->option('class');
@@ -59,7 +61,8 @@ class SeederExecute extends Command
     function getNewFlixSeederClasses(): array
     {
         $new_seeders = [];
-        $seeder_dir  = realpath(__DIR__  . '/../../../database/seeders/');
+        $seeder_dir  = app_path('database/seeders');
+
         foreach (scandir($seeder_dir) as $folder_name) {
 
             $is_flix_seeder_dir = is_dir($seeder_dir . DIRECTORY_SEPARATOR . $folder_name) && str_starts_with($folder_name, 'FlixSeeder_');
@@ -102,6 +105,7 @@ class SeederExecute extends Command
             ->where('seeder_name', $class_name)
             ->exists();
     }
+
 
     private function markAsExecuted($seeder_name): void
     {
