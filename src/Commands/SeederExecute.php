@@ -61,7 +61,7 @@ class SeederExecute extends Command
     function getNewFlixSeederClasses(): array
     {
         $new_seeders = [];
-        $seeder_dir  = app_path('database/seeders');
+        $seeder_dir  = base_path('database/seeders');
 
         foreach (scandir($seeder_dir) as $folder_name) {
 
