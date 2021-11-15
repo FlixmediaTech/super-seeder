@@ -13,10 +13,35 @@ class SeederExecute extends Command
     protected $description = 'Execute flix seeder';
 
 
-    public function handle()
+    private function beginTransaction()
     {
 
-        DB::transaction(function () {
+        foreach (config('super_seeder.db_transaction_connections') as $connectionName)
+            DB::connection($connectionName)->beginTransaction();
+
+    }
+
+
+    private function rollbackTransaction()
+    {
+
+        foreach (config('super_seeder.db_transaction_connections') as $connectionName)
+            DB::connection($connectionName)->rollBack();
+
+    }
+
+    private function commitTransaction()
+    {
+
+        foreach (config('super_seeder.db_transaction_connections') as $connectionName)
+            DB::connection($connectionName)->commit();
+
+    }
+
+    public function handle()
+    {
+        $this->beginTransaction();
+        try {
             $seeder_classes = $this->getSeederClasses();
 
             foreach ($seeder_classes as $seeder_class) {
@@ -40,7 +65,12 @@ class SeederExecute extends Command
                 $seeder_instance->run();
                 $this->markAsExecuted($seeder_class);
             }
-        });
+        } catch (\Exception | \Error $e) {
+            $this->rollbackTransaction();
+            throw $e;
+        }
+
+        $this->commitTransaction();
     }
 
 
@@ -61,18 +91,18 @@ class SeederExecute extends Command
     function getNewFlixSeederClasses(): array
     {
         $new_seeders = [];
-        $seeder_dir  = base_path('database/seeders');
+        $seeder_dir = base_path('database/seeders');
 
         foreach (scandir($seeder_dir) as $folder_name) {
 
             $is_flix_seeder_dir = is_dir($seeder_dir . DIRECTORY_SEPARATOR . $folder_name) && str_starts_with($folder_name, 'FlixSeeder_');
 
-            if(!$is_flix_seeder_dir || $this->isOldSeederFolder($folder_name)) {
+            if (!$is_flix_seeder_dir || $this->isOldSeederFolder($folder_name)) {
                 continue;
             }
 
-            foreach (scandir($seeder_dir .DIRECTORY_SEPARATOR . $folder_name) as $class_file_name) {
-                if($class_file_name[0] === '.') continue;
+            foreach (scandir($seeder_dir . DIRECTORY_SEPARATOR . $folder_name) as $class_file_name) {
+                if ($class_file_name[0] === '.') continue;
                 list($seeder_class) = explode('.', $class_file_name);
                 $seeder_class = "Database\\Seeders\\$folder_name\\$seeder_class";
                 if ($this->isAlreadyExecuted($seeder_class)) {
@@ -88,9 +118,9 @@ class SeederExecute extends Command
 
     public function isOldSeederFolder($folder_name): bool
     {
-        $only_lastest_months = (int) $this->option('only_lastest_months');
+        $only_lastest_months = (int)$this->option('only_lastest_months');
 
-        if($only_lastest_months) {
+        if ($only_lastest_months) {
             $max_old_folder = config('super_seeder.seeder_folder_prefix') . now()->subMonths($only_lastest_months)->format('Ym');
             return strcmp($max_old_folder, $folder_name) > 0;
         }
